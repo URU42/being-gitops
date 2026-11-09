@@ -11,4 +11,4 @@ resources:
 images:
 - name: harbor.uru42.space/uru42/frontend
   newName: harbor.uru42.space/uru42/frontend
-  newTag: test-6-6f8b89a3
+  newTag: test-7-67630b33
