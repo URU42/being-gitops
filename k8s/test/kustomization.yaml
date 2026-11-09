@@ -4,11 +4,10 @@ kind: Kustomization
 namespace: u4-2
 
 resources:
-    - smoke-deployment.yaml
+    - frontend-deployment.yaml
+    - frontend-service.yaml
+    - frontend-ingress.yaml
 
 images:
-  - name: harbor.uru42.space/uru42/frontend
-    newTag: test-1-dbe5e317
-
-  - name: harbor.uru42.space/uru42/backend
-    newTag: test-1-a1b2c3d4
+    - name: harbor.uru42.space/uru42/frontend
+      newTag: test-1-dbe5e317

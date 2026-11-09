@@ -1,0 +1,31 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+    name: frontend
+    namespace: u4-2
+spec:
+    replicas: 1
+    selector:
+        matchLabels:
+            app: frontend
+    template:
+        metadata:
+            labels:
+                app: frontend
+        spec:
+            automountServiceAccountToken: false
+            imagePullSecrets:
+                - name: uru42-harbor-pull
+            containers:
+                - name: frontend
+                  image: harbor.uru42.space/uru42/frontend:test-1-dbe5e317
+                  imagePullPolicy: Always
+                  ports:
+                      - containerPort: 80
+                  resources:
+                      requests:
+                          cpu: 100m
+                          memory: 128Mi
+                      limits:
+                          cpu: 300m
+                          memory: 256Mi
