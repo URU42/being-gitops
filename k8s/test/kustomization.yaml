@@ -4,10 +4,11 @@ kind: Kustomization
 namespace: u4-2
 
 resources:
-    - frontend-deployment.yaml
-    - frontend-service.yaml
-    - frontend-ingress.yaml
+- frontend-deployment.yaml
+- frontend-service.yaml
+- frontend-ingress.yaml
 
 images:
-    - name: harbor.uru42.space/uru42/frontend
-      newTag: test-1-dbe5e317
+- name: harbor.uru42.space/uru42/frontend
+  newName: harbor.uru42.space/uru42/frontend
+  newTag: test-5-e9f31dbc
