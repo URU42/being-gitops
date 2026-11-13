@@ -1,0 +1,10 @@
+# Backend 의 H2 파일 DB(계정·세션)와 workflow 데이터.
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+    name: clx-backend-data
+spec:
+    accessModes: [ReadWriteOnce]
+    storageClassName: ebs-sc
+    resources:
+        requests: { storage: 1Gi }

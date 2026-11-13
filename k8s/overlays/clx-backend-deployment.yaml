@@ -1,0 +1,73 @@
+# sk-clx-diag-agent Backend. H2 파일 DB 가 PVC(RWO) 에 있으므로 replicas 1, Recreate.
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+    name: clx-backend
+    labels: { app: clx-backend }
+spec:
+    replicas: 1
+    revisionHistoryLimit: 2
+    strategy: { type: Recreate }
+    selector:
+        matchLabels: { app: clx-backend }
+    template:
+        metadata:
+            labels: { app: clx-backend }
+        spec:
+            automountServiceAccountToken: false
+            imagePullSecrets:
+                - name: uru42-harbor-pull
+            securityContext:
+                runAsNonRoot: true
+                runAsUser: 1000 # 이미지의 appuser
+                runAsGroup: 1000
+                fsGroup: 1000 # PVC 에 쓰기 위해
+            containers:
+                - name: backend
+                  image: harbor.uru42.space/uru42/clx-backend:latest # 태그는 kustomization.yaml 의 images 로 바꾼다 (Jenkins)
+                  ports:
+                      - { name: http, containerPort: 8080 }
+                  env:
+                      - name: AUTH_JWT_SECRET # 필수. 없으면 시작을 거절한다
+                        valueFrom:
+                            secretKeyRef: { name: clx-backend, key: auth-jwt-secret }
+                      - name: AUTH_ADMIN_USERNAME # 최초 관리자 생성용. 생성 뒤에는 Secret 에서 지워도 된다
+                        valueFrom:
+                            secretKeyRef: { name: clx-backend, key: admin-username, optional: true }
+                      - name: AUTH_ADMIN_PASSWORD
+                        valueFrom:
+                            secretKeyRef: { name: clx-backend, key: admin-password, optional: true }
+                      - { name: AUTH_COOKIE_SECURE, value: "true" }
+                      - { name: AUTH_DB_URL, value: "jdbc:h2:file:/app/.backend-data/auth;CACHE_SIZE=65536" }
+                      - { name: H2_CONSOLE_ENABLED, value: "false" }
+                      - { name: MONITORING_ENABLED, value: "true" }
+                      - { name: SENSOR_DATA_IMPORT_ENABLED, value: "false" }
+                      - { name: AI_MODE, value: http }
+                      - { name: AI_BASE_URL, value: "http://clx-ai:8000" }
+                      - { name: JAVA_TOOL_OPTIONS, value: "-Xms128m -Xmx1024m" } # compose 와 같은 힙. limits.memory 는 힙보다 여유 있게
+                  resources:
+                      requests: { cpu: 200m, memory: 768Mi }
+                      limits: { cpu: "1", memory: 1536Mi }
+                  securityContext:
+                      allowPrivilegeEscalation: false
+                      readOnlyRootFilesystem: true
+                      capabilities: { drop: [ALL] }
+                  startupProbe: # Spring 기동 대기, 최대 3분
+                      httpGet: { path: /api/v1/health, port: http }
+                      periodSeconds: 5
+                      failureThreshold: 36
+                  readinessProbe:
+                      httpGet: { path: /api/v1/health, port: http }
+                      periodSeconds: 10
+                  livenessProbe:
+                      httpGet: { path: /api/v1/health, port: http }
+                      periodSeconds: 30
+                      failureThreshold: 3
+                  volumeMounts:
+                      - { name: data, mountPath: /app/.backend-data }
+                      - { name: tmp, mountPath: /tmp }
+            volumes:
+                - name: data
+                  persistentVolumeClaim: { claimName: clx-backend-data }
+                - name: tmp
+                  emptyDir: {}

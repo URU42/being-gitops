@@ -1,0 +1,57 @@
+# sk-clx-diag-agent Frontend. Nginx 가 정적 파일을 주고 /api/ 를 clx-backend 로 프록시한다 (설정은 ConfigMap clx-frontend-nginx).
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+    name: clx-frontend
+    labels: { app: clx-frontend }
+spec:
+    replicas: 1
+    revisionHistoryLimit: 2
+    selector:
+        matchLabels: { app: clx-frontend }
+    template:
+        metadata:
+            labels: { app: clx-frontend }
+        spec:
+            automountServiceAccountToken: false
+            imagePullSecrets:
+                - name: uru42-harbor-pull
+            securityContext:
+                runAsNonRoot: true
+                runAsUser: 101 # 이미지의 nginx
+                runAsGroup: 101
+                sysctls: # 비root 가 80 포트를 열 수 있게 한다 (safe sysctl)
+                    - { name: net.ipv4.ip_unprivileged_port_start, value: "0" }
+            containers:
+                - name: frontend
+                  image: harbor.uru42.space/uru42/clx-frontend:latest # 태그는 kustomization.yaml 의 images 로 바꾼다 (Jenkins)
+                  ports:
+                      - { name: http, containerPort: 80 }
+                  resources:
+                      requests: { cpu: 50m, memory: 64Mi }
+                      limits: { cpu: 300m, memory: 256Mi }
+                  securityContext:
+                      allowPrivilegeEscalation: false
+                      readOnlyRootFilesystem: true
+                      capabilities: { drop: [ALL] }
+                  readinessProbe:
+                      httpGet: { path: /, port: http }
+                      periodSeconds: 10
+                  livenessProbe:
+                      httpGet: { path: /, port: http }
+                      periodSeconds: 30
+                      failureThreshold: 3
+                  volumeMounts:
+                      - { name: nginx-conf, mountPath: /etc/nginx/conf.d, readOnly: true }
+                      - { name: cache, mountPath: /var/cache/nginx }
+                      - { name: run, mountPath: /var/run }
+                      - { name: tmp, mountPath: /tmp }
+            volumes:
+                - name: nginx-conf
+                  configMap: { name: clx-frontend-nginx }
+                - name: cache
+                  emptyDir: {}
+                - name: run
+                  emptyDir: {}
+                - name: tmp
+                  emptyDir: {}

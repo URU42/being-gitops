@@ -1,0 +1,48 @@
+# sk-clx-diag-agent AI 서버. 클러스터 안에서만 부른다 (Backend → http://clx-ai:8000). Ingress 에 연결하지 않는다.
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+    name: clx-ai
+    labels: { app: clx-ai }
+spec:
+    replicas: 1
+    revisionHistoryLimit: 2 # 빌드마다 태그가 바뀌므로 작게 둔다
+    selector:
+        matchLabels: { app: clx-ai }
+    template:
+        metadata:
+            labels: { app: clx-ai }
+        spec:
+            automountServiceAccountToken: false
+            imagePullSecrets:
+                - name: uru42-harbor-pull
+            securityContext:
+                runAsNonRoot: true
+                runAsUser: 1000 # 이미지의 appuser
+                runAsGroup: 1000
+            containers:
+                - name: ai
+                  image: harbor.uru42.space/uru42/clx-ai:latest # 태그는 kustomization.yaml 의 images 로 바꾼다 (Jenkins)
+                  ports:
+                      - { name: http, containerPort: 8000 }
+                  env:
+                      - { name: DIAGNOSIS_PROVIDER, value: mock } # dev 는 mock. 응답에 mode: mock 이 표시된다
+                  resources:
+                      requests: { cpu: 100m, memory: 256Mi }
+                      limits: { cpu: 500m, memory: 512Mi }
+                  securityContext:
+                      allowPrivilegeEscalation: false
+                      readOnlyRootFilesystem: true
+                      capabilities: { drop: [ALL] }
+                  readinessProbe:
+                      httpGet: { path: /health, port: http }
+                      periodSeconds: 10
+                  livenessProbe:
+                      httpGet: { path: /health, port: http }
+                      periodSeconds: 30
+                      failureThreshold: 3
+                  volumeMounts:
+                      - { name: tmp, mountPath: /tmp }
+            volumes:
+                - name: tmp
+                  emptyDir: {}

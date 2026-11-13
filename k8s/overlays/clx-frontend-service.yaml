@@ -1,0 +1,10 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: clx-frontend
+  labels: { app: clx-frontend }
+spec:
+  type: ClusterIP
+  selector: { app: clx-frontend }
+  ports:
+    - { name: http, port: 80, targetPort: http }

@@ -5,3 +5,14 @@ namespace: u4-2
 
 resources:
     - smoke-deployment.yaml
+    # sk-clx-diag-agent (dev). 이미지 태그는 sk-clx-diag-agent 의 Jenkins 가 images 에 적는다.
+    # clx-backend-secret.example.yaml 은 넣지 않는다 (Secret 은 kubectl 로 직접 만든다)
+    - clx-ai-deployment.yaml
+    - clx-ai-service.yaml
+    - clx-backend-pvc.yaml
+    - clx-backend-deployment.yaml
+    - clx-backend-service.yaml
+    - clx-frontend-nginx-configmap.yaml
+    - clx-frontend-deployment.yaml
+    - clx-frontend-service.yaml
+    - clx-frontend-ingress.yaml

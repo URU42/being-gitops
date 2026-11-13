@@ -1,0 +1,11 @@
+# Frontend Nginx 가 /api/ 를 http://clx-backend:8080 으로 프록시한다. Ingress 에 직접 연결하지 않는다.
+apiVersion: v1
+kind: Service
+metadata:
+  name: clx-backend
+  labels: { app: clx-backend }
+spec:
+  type: ClusterIP
+  selector: { app: clx-backend }
+  ports:
+    - { name: http, port: 8080, targetPort: http }

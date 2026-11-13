@@ -1,0 +1,24 @@
+# https://u4-2.skala-us.com/ → clx-frontend. /api/** 는 Frontend Nginx 가 clx-backend 로 넘긴다.
+# 같은 호스트의 / 를 쓰던 k8s/test 의 Ingress(web)를 내린 뒤 적용한다.
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: clx-web
+  annotations:
+    nginx.ingress.kubernetes.io/proxy-body-size: 5m # Frontend Nginx 의 client_max_body_size 와 맞춘다
+spec:
+  ingressClassName: nginx
+  tls:
+    - hosts:
+        - u4-2.skala-us.com
+      secretName: team-tls
+  rules:
+    - host: u4-2.skala-us.com
+      http:
+        paths:
+          - path: /
+            pathType: Prefix
+            backend:
+              service:
+                name: clx-frontend
+                port: { name: http }
