@@ -45,9 +45,9 @@ spec:
                       - { name: AI_MODE, value: http }
                       - { name: AI_BASE_URL, value: "http://clx-ai:8000" }
                       - { name: JAVA_TOOL_OPTIONS, value: "-Xms128m -Xmx1024m" } # compose 와 같은 힙. limits.memory 는 힙보다 여유 있게
-                  resources:
+                  resources: # u4-2 team-quota(limits cpu 2)를 다른 서비스와 나눠 쓴다. 롤링 업데이트 여유분까지 남겨 둔다
                       requests: { cpu: 200m, memory: 768Mi }
-                      limits: { cpu: "1", memory: 1536Mi }
+                      limits: { cpu: 700m, memory: 1536Mi }
                   securityContext:
                       allowPrivilegeEscalation: false
                       readOnlyRootFilesystem: true

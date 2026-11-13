@@ -27,9 +27,9 @@ spec:
                   image: harbor.uru42.space/uru42/clx-frontend:latest # 태그는 kustomization.yaml 의 images 로 바꾼다 (Jenkins)
                   ports:
                       - { name: http, containerPort: 80 }
-                  resources:
-                      requests: { cpu: 50m, memory: 64Mi }
-                      limits: { cpu: 300m, memory: 256Mi }
+                  resources: # u4-2 team-quota 를 다른 서비스와 나눠 쓴다. 실측 idle 1m / 4Mi
+                      requests: { cpu: 20m, memory: 32Mi }
+                      limits: { cpu: 100m, memory: 128Mi }
                   securityContext:
                       allowPrivilegeEscalation: false
                       readOnlyRootFilesystem: true

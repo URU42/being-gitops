@@ -27,9 +27,9 @@ spec:
                       - { name: http, containerPort: 8000 }
                   env:
                       - { name: DIAGNOSIS_PROVIDER, value: mock } # dev 는 mock. 응답에 mode: mock 이 표시된다
-                  resources:
-                      requests: { cpu: 100m, memory: 256Mi }
-                      limits: { cpu: 500m, memory: 512Mi }
+                  resources: # u4-2 team-quota(limits cpu 2, memory 4Gi)를 다른 서비스와 나눠 쓴다. 실측 idle 2m / 33Mi
+                      requests: { cpu: 50m, memory: 128Mi }
+                      limits: { cpu: 200m, memory: 256Mi }
                   securityContext:
                       allowPrivilegeEscalation: false
                       readOnlyRootFilesystem: true
