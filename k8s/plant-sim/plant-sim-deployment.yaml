@@ -6,6 +6,7 @@ metadata:
     labels: { app: plant-sim }
 spec:
     replicas: 1
+    revisionHistoryLimit: 2 # 롤백용으로 남기는 예전 ReplicaSet 수. 빌드마다 태그가 바뀌므로 작게 둔다
     strategy: { type: Recreate }
     selector:
         matchLabels: { app: plant-sim }
@@ -14,7 +15,7 @@ spec:
             labels: { app: plant-sim }
         spec:
             imagePullSecrets:
-                - name: uru42-harbor-pull # Harbor 비공개 프로젝트. 기본 ServiceAccount 에 안 붙어 있을 수 있으므로 직접 적는다
+                - name: harbor-cred # Harbor 비공개 프로젝트. 기본 ServiceAccount 에 안 붙어 있을 수 있으므로 직접 적는다
             containers:
                 - name: plant-sim
                   image: harbor.uru42.space/uru42/plant-simulator:latest # 태그는 kustomization.yaml 의 images 로 바꾼다
@@ -36,8 +37,7 @@ spec:
                   env:
                       - { name: ROOT_PATH, value: /plant-sim } # Ingress 접두어. 루트 링크·리다이렉트·/docs 가 붙인다
                       - { name: WITH_SIMULATORS, value: "1" }
-                      - { name: SIM_SCENARIO_DIR, value: /app/private } # 평가용 시나리오 Secret (선택)
-                      - name: INGEST_TOKEN # 있으면 외부 /ingest 는 X-Ingest-Token 필수
+                      - name: INGEST_TOKEN # 있으면 외부 /ingest·/anomalies(주입·멈춤)는 X-Ingest-Token 필수
                         valueFrom:
                             secretKeyRef:
                                 {
@@ -72,13 +72,6 @@ spec:
                       failureThreshold: 5
                   volumeMounts:
                       - { name: data, mountPath: /app/data }
-                      - {
-                            name: private,
-                            mountPath: /app/private,
-                            readOnly: true,
-                        }
             volumes:
                 - name: data
                   persistentVolumeClaim: { claimName: plant-sim-data }
-                - name: private
-                  secret: { secretName: plant-sim-scenarios, optional: true }
