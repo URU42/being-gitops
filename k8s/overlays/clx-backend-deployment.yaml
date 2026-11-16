@@ -45,6 +45,22 @@ spec:
                       - { name: AI_MODE, value: http }
                       - { name: AI_BASE_URL, value: "http://clx-ai:8000" }
                       - { name: JAVA_TOOL_OPTIONS, value: "-Xms128m -Xmx1024m" } # compose 와 같은 힙. limits.memory 는 힙보다 여유 있게
+                      # Alarm Worker: Redis Stream plant-sim:alarms → PostgreSQL(alarm 스키마). consumer 이름은 HOSTNAME(파드 이름)을 자동으로 쓴다
+                      - { name: ALARM_WORKER_ENABLED, value: "true" }
+                      - { name: REDIS_HOST, value: clx-redis } # plant-sim 과 같은 Redis
+                      - { name: REDIS_PORT, value: "6379" }
+                      # 제공된 rds-credentials Secret 에서 필요한 키만 골라 ALARM_DB_* 로 넣는다.
+                      # envFrom 으로 통째로 넣지 않는다: SPRING_DATASOURCE_* 가 인증용 H2 DataSource(spring.datasource.*)를 덮어쓴다.
+                      # optional: Secret 이나 키가 없어도 파드는 뜬다. Worker 만 DB 연결을 재시도한다
+                      - name: ALARM_DB_URL
+                        valueFrom:
+                            secretKeyRef: { name: rds-credentials, key: SPRING_DATASOURCE_URL, optional: true }
+                      - name: ALARM_DB_USERNAME
+                        valueFrom:
+                            secretKeyRef: { name: rds-credentials, key: SPRING_DATASOURCE_USERNAME, optional: true }
+                      - name: ALARM_DB_PASSWORD
+                        valueFrom:
+                            secretKeyRef: { name: rds-credentials, key: SPRING_DATASOURCE_PASSWORD, optional: true }
                   resources: # u4-2 team-quota(limits cpu 2)를 다른 서비스와 나눠 쓴다. 롤링 업데이트 여유분까지 남겨 둔다
                       requests: { cpu: 200m, memory: 768Mi }
                       limits: { cpu: 700m, memory: 1536Mi }
