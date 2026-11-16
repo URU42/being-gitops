@@ -15,6 +15,9 @@ resources:
 - clx-frontend-deployment.yaml
 - clx-frontend-service.yaml
 - clx-frontend-ingress.yaml
+- clx-redis-pvc.yaml
+- clx-redis-deployment.yaml
+- clx-redis-service.yaml
 images:
 - name: harbor.uru42.space/uru42/clx-ai
   newName: harbor.uru42.space/uru42/clx-ai

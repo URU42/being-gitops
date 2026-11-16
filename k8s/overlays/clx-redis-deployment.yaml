@@ -1,0 +1,53 @@
+# 알람 이벤트용 Redis Streams. AOF 가 PVC(RWO) 에 있으므로 replicas 1, Recreate.
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+    name: clx-redis
+    labels: { app: clx-redis }
+spec:
+    replicas: 1
+    revisionHistoryLimit: 2
+    strategy: { type: Recreate }
+    selector:
+        matchLabels: { app: clx-redis }
+    template:
+        metadata:
+            labels: { app: clx-redis }
+        spec:
+            automountServiceAccountToken: false
+            securityContext:
+                runAsNonRoot: true
+                runAsUser: 999 # 이미지의 redis 사용자
+                runAsGroup: 1000
+                fsGroup: 1000 # PVC 에 쓰기 위해
+            containers:
+                - name: redis
+                  image: redis:7.4-alpine # Docker Hub 공식 이미지
+                  args:
+                      - --appendonly
+                      - "yes"
+                      - --maxmemory
+                      - 384mb # limits.memory 보다 작게. AOF rewrite fork 여유분
+                      - --maxmemory-policy
+                      - noeviction # Stream 키를 조용히 지우지 않는다. 발행 쪽에서 XADD MAXLEN 으로 자른다
+                  ports:
+                      - { name: redis, containerPort: 6379 }
+                  resources: # u4-2 team-quota(limits cpu 4, memory 8Gi)를 다른 서비스와 나눠 쓴다
+                      requests: { cpu: 50m, memory: 128Mi }
+                      limits: { cpu: 500m, memory: 512Mi }
+                  securityContext:
+                      allowPrivilegeEscalation: false
+                      readOnlyRootFilesystem: true
+                      capabilities: { drop: [ALL] }
+                  readinessProbe:
+                      exec: { command: [redis-cli, ping] }
+                      periodSeconds: 10
+                  livenessProbe:
+                      tcpSocket: { port: redis }
+                      periodSeconds: 30
+                      failureThreshold: 3
+                  volumeMounts:
+                      - { name: data, mountPath: /data }
+            volumes:
+                - name: data
+                  persistentVolumeClaim: { claimName: clx-redis-data }
