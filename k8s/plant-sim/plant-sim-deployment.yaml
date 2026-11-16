@@ -45,6 +45,8 @@ spec:
                                     key: ingest-token,
                                     optional: true,
                                 }
+                      - name: REDIS_URL
+                        value: "redis://clx-redis:6379" # 실시간 알람 열림·닫힘을 Stream plant-sim:alarms 로 발행
                       - name: CORS_ORIGINS # 브라우저 frontend 가 다른 origin 이면 적는다
                         valueFrom:
                             configMapKeyRef:
