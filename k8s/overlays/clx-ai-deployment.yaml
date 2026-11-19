@@ -26,11 +26,20 @@ spec:
                   ports:
                       - { name: http, containerPort: 8000 }
                   env:
-                      - { name: DIAGNOSIS_PROVIDER, value: mock } # dev 는 mock. 응답에 mode: mock 이 표시된다
                       # 알람 요약(LangChain + OpenAI). 키가 없어도 서버는 뜨고 /internal/v1/alarm-summaries 만 503 을 돌려준다
                       - name: OPENAI_API_KEY
                         valueFrom:
                             secretKeyRef: { name: clx-ai, key: openai-api-key, optional: true }
+                      # /internal/v1/agent/* 의 X-Agent-Token 과 비교한다. 없으면 에이전트 API 만 AGENT_NOT_CONFIGURED 를 돌려준다
+                      - name: AGENT_INTERNAL_TOKEN
+                        valueFrom:
+                            secretKeyRef: { name: clx-ai, key: agent-internal-token, optional: true }
+                      # 있으면 /internal/v1/guide/** 에 X-Service-Token 을 요구한다. backend 가 헤더를 보내기 전에는 Secret 에 넣지 않는다
+                      - name: AI_SERVICE_TOKEN
+                        valueFrom:
+                            secretKeyRef: { name: clx-ai, key: ai-service-token, optional: true }
+                      - { name: BACKEND_BASE_URL, value: "http://clx-backend:8080" } # 에이전트 Tool 이 읽는 backend
+                      - { name: AGENT_RESULT_DIRECTORY, value: /tmp/agent-results } # 루트 FS 가 읽기 전용이라 emptyDir 에 둔다. 파드 재시작 시 사라진다
                       - { name: ALARM_SUMMARY_MODEL, value: gpt-4o-mini }
                   resources: # u4-2 team-quota(limits cpu 2, memory 4Gi)를 다른 서비스와 나눠 쓴다. 실측 idle 2m / 33Mi
                       requests: { cpu: 50m, memory: 128Mi }
