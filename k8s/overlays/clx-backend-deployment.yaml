@@ -30,33 +30,68 @@ spec:
                   env:
                       - name: AUTH_JWT_SECRET # 필수. 없으면 시작을 거절한다
                         valueFrom:
-                            secretKeyRef: { name: clx-backend, key: auth-jwt-secret }
+                            secretKeyRef:
+                                { name: clx-backend, key: auth-jwt-secret }
                       - name: AUTH_ADMIN_USERNAME # 최초 관리자 생성용. 생성 뒤에는 Secret 에서 지워도 된다
                         valueFrom:
-                            secretKeyRef: { name: clx-backend, key: admin-username, optional: true }
+                            secretKeyRef:
+                                {
+                                    name: clx-backend,
+                                    key: admin-username,
+                                    optional: true,
+                                }
                       - name: AUTH_ADMIN_PASSWORD
                         valueFrom:
-                            secretKeyRef: { name: clx-backend, key: admin-password, optional: true }
+                            secretKeyRef:
+                                {
+                                    name: clx-backend,
+                                    key: admin-password,
+                                    optional: true,
+                                }
                       - { name: AUTH_COOKIE_SECURE, value: "true" }
                       # 인증·센서 기본 DB: 제공된 rds-credentials 에서 키만 골라 DB_* 로 넣는다(H2 자료는 옮기지 않는다, ADR 0019).
                       # 공유 DB(u4_2)라 다른 서비스의 public Flyway 이력과 섞이지 않게 clx 스키마를 쓴다. 스키마는 Flyway 가 만든다.
                       - name: DB_URL
                         valueFrom:
-                            secretKeyRef: { name: rds-credentials, key: SPRING_DATASOURCE_URL }
+                            secretKeyRef:
+                                {
+                                    name: rds-credentials,
+                                    key: SPRING_DATASOURCE_URL,
+                                }
                       - name: DB_USERNAME
                         valueFrom:
-                            secretKeyRef: { name: rds-credentials, key: SPRING_DATASOURCE_USERNAME }
+                            secretKeyRef:
+                                {
+                                    name: rds-credentials,
+                                    key: SPRING_DATASOURCE_USERNAME,
+                                }
                       - name: DB_PASSWORD
                         valueFrom:
-                            secretKeyRef: { name: rds-credentials, key: SPRING_DATASOURCE_PASSWORD }
+                            secretKeyRef:
+                                {
+                                    name: rds-credentials,
+                                    key: SPRING_DATASOURCE_PASSWORD,
+                                }
                       - { name: SPRING_DATASOURCE_HIKARI_SCHEMA, value: clx } # 연결 search_path. native SQL 도 clx 를 쓴다
                       - { name: SPRING_FLYWAY_SCHEMAS, value: clx } # Flyway 이력·테이블을 clx 에 둔다
-                      - { name: SPRING_JPA_PROPERTIES_HIBERNATE_DEFAULT_SCHEMA, value: clx }
+                      - {
+                            name: SPRING_JPA_PROPERTIES_HIBERNATE_DEFAULT_SCHEMA,
+                            value: clx,
+                        }
                       - { name: H2_CONSOLE_ENABLED, value: "false" }
                       - { name: MONITORING_ENABLED, value: "true" }
                       - { name: SENSOR_DATA_IMPORT_ENABLED, value: "false" }
                       - { name: AI_MODE, value: http }
                       - { name: AI_BASE_URL, value: "http://clx-ai:8000" }
+                      # clx-ai 와 같은 Secret 키를 읽어 X-Agent-Token 으로 보낸다. 없으면 AI 대화만 503 AGENT_NOT_CONFIGURED
+                      - name: AGENT_INTERNAL_TOKEN
+                        valueFrom:
+                            secretKeyRef:
+                                {
+                                    name: clx-ai,
+                                    key: agent-internal-token,
+                                    optional: true,
+                                }
                       - { name: JAVA_TOOL_OPTIONS, value: "-Xms128m -Xmx1024m" } # compose 와 같은 힙. limits.memory 는 힙보다 여유 있게
                       # Alarm Worker: Redis Stream plant-sim:alarms → PostgreSQL(alarm 스키마). consumer 이름은 HOSTNAME(파드 이름)을 자동으로 쓴다
                       - { name: ALARM_WORKER_ENABLED, value: "true" }
@@ -67,13 +102,28 @@ spec:
                       # optional: Secret 이나 키가 없어도 파드는 뜬다. Worker 만 DB 연결을 재시도한다
                       - name: ALARM_DB_URL
                         valueFrom:
-                            secretKeyRef: { name: rds-credentials, key: SPRING_DATASOURCE_URL, optional: true }
+                            secretKeyRef:
+                                {
+                                    name: rds-credentials,
+                                    key: SPRING_DATASOURCE_URL,
+                                    optional: true,
+                                }
                       - name: ALARM_DB_USERNAME
                         valueFrom:
-                            secretKeyRef: { name: rds-credentials, key: SPRING_DATASOURCE_USERNAME, optional: true }
+                            secretKeyRef:
+                                {
+                                    name: rds-credentials,
+                                    key: SPRING_DATASOURCE_USERNAME,
+                                    optional: true,
+                                }
                       - name: ALARM_DB_PASSWORD
                         valueFrom:
-                            secretKeyRef: { name: rds-credentials, key: SPRING_DATASOURCE_PASSWORD, optional: true }
+                            secretKeyRef:
+                                {
+                                    name: rds-credentials,
+                                    key: SPRING_DATASOURCE_PASSWORD,
+                                    optional: true,
+                                }
                   resources: # u4-2 team-quota(limits cpu 2)를 다른 서비스와 나눠 쓴다. 롤링 업데이트 여유분까지 남겨 둔다
                       requests: { cpu: 200m, memory: 768Mi }
                       limits: { cpu: 700m, memory: 1536Mi }
