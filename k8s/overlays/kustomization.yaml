@@ -21,10 +21,10 @@ resources:
 images:
 - name: harbor.uru42.space/uru42/clx-ai
   newName: harbor.uru42.space/uru42/clx-ai
-  newTag: dev-20-d8e7d98d
+  newTag: dev-25-5b810730
 - name: harbor.uru42.space/uru42/clx-backend
   newName: harbor.uru42.space/uru42/clx-backend
-  newTag: dev-20-d8e7d98d
+  newTag: dev-25-5b810730
 - name: harbor.uru42.space/uru42/clx-frontend
   newName: harbor.uru42.space/uru42/clx-frontend
-  newTag: dev-20-d8e7d98d
+  newTag: dev-25-5b810730
