@@ -9,3 +9,4 @@ spec:
   selector: { app: plant-sim }
   ports:
     - { name: http, port: 8000, targetPort: http }
+#test
