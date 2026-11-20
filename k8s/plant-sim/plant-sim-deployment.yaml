@@ -46,7 +46,9 @@ spec:
                                     optional: true,
                                 }
                       - name: REDIS_URL
-                        value: "redis://clx-redis:6379" # 실시간 알람 열림·닫힘을 Stream plant-sim:alarms 로 발행
+                        value: "redis://clx-redis:6379" # 측정값을 Stream plant-sim:data:{공장} 으로 발행 (plant-sim:alarms 는 2026-11-19 삭제)
+                      - name: RESET_DB_ON_SCHEMA_CHANGE # 스키마 버전이 다른 DB 파일은 지우고 재백필 (이전 정답지·집계도 지워진다, plant-simulator PR #17)
+                        value: "1"
                       - name: CORS_ORIGINS # 브라우저 frontend 가 다른 origin 이면 적는다
                         valueFrom:
                             configMapKeyRef:
