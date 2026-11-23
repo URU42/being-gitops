@@ -59,6 +59,7 @@ jobs:
                 docker image rm "$img" "$dst" >/dev/null
               fi
               echo "$img -> $dst"
+              echo "${dst##*:}" >> "$RUNNER_TEMP/deployed.txt"   # Slack 메시지용
               subst+=(-e "s|$img|$dst|g")
             done
             if [ ${#subst[@]} -gt 0 ]; then sed "${subst[@]}" "$out" > "$out.ecr"; else cp "$out" "$out.ecr"; fi
@@ -71,5 +72,43 @@ jobs:
             done
             echo "::endgroup::"
           done
+      # 사용자가 실제로 들어오는 주소로 확인한다. Ingress whitelist 때문에 캠퍼스 IP 인 runner 에서만 열린다.
+      # rollout 이 끝나도 Ingress 반영이 늦을 수 있어 실패하면 5초 간격으로 몇 번 더 본다. (local-ui/server.mjs 의 HEALTH 와 같은 경로)
+      - name: Health check
+        run: |
+          fail=0
+          for p in / /api/v1/health /plant-sim/health; do
+            for i in 1 2 3 4 5 6; do
+              code=$(curl -s -o /dev/null -m 10 -w '%{http_code}' "https://u4-2.skala-us.com$p") || true
+              case $code in 2??|3??) break ;; esac
+              sleep 5
+            done
+            echo "$code $p" | tee -a "$RUNNER_TEMP/health.txt"
+            case $code in 2??|3??) ;; *) fail=1 ;; esac
+          done
+          exit $fail
+      # repo Secret SLACK_WEBHOOK_URL(Slack Incoming Webhook)이 없으면 건너뛴다. 전송 실패는 배포 결과를 바꾸지 않는다
+      - name: Slack
+        if: always()
+        env:
+          SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}
+          STATUS: ${{ job.status }}
+          EVENT: ${{ github.event_name }}
+          RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+        run: |
+          [ -n "$SLACK_WEBHOOK_URL" ] || { echo "SLACK_WEBHOOK_URL 없음, 건너뜀"; exit 0; }
+          case $STATUS in
+            success) icon=':white_check_mark:' word='성공' ;;
+            cancelled) icon=':double_vertical_bar:' word='취소' ;;
+            *) icon=':x:' word='실패' ;;
+          esac
+          join() { [ -s "$1" ] && paste -s -d, "$1" | sed 's/,/, /g' || echo '-'; }
+          jq -n --arg icon "$icon" --arg word "$word" --arg url "$RUN_URL" --arg event "$EVENT" \
+                --arg sha "$(git rev-parse --short HEAD)" --arg subject "$(git log -1 --format='%s (%an)')" \
+                --arg images "$(join "$RUNNER_TEMP/deployed.txt")" --arg health "$(join "$RUNNER_TEMP/health.txt")" '
+            def esc: gsub("&"; "&amp;") | gsub("<"; "&lt;") | gsub(">"; "&gt;");
+            {text: "\($icon) *u4-2 배포 \($word)* · <\($url)|로그>\n커밋 `\($sha)` \($subject | esc) · \($event)\n이미지: \($images)\n헬스체크: \($health)"}' \
+            | curl -fsS -m 10 -H 'Content-type: application/json' --data @- "$SLACK_WEBHOOK_URL" >/dev/null \
+            || echo "::warning::Slack 전송 실패"
       - if: always()
         run: docker logout harbor.uru42.space || true
