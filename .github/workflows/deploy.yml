@@ -50,8 +50,12 @@ jobs:
             subst=()
             for img in $(grep -oE 'harbor\.uru42\.space/[^[:space:]"]+' "$out" | sort -u); do
               dst="$ECR:$(basename "${img%:*}")-${img##*:}"   # .../uru42/clx-ai:dev-41-x → app:clx-ai-dev-41-x
-              # ECR 태그는 덮어쓸 수 없다(IMMUTABLE). 이미 있으면 옮기지 않는다
-              if ! docker manifest inspect "$dst" >/dev/null 2>&1; then
+              # 이미 ECR 에 있으면 Harbor 에서 받지 않는다 (Harbor 서버 아웃바운드·Cloudflare 트래픽 절약)
+              if aws ecr describe-images --repository-name "${ECR#*/}" --image-ids imageTag="${dst##*:}" >/dev/null 2>"$RUNNER_TEMP/ecr.err"; then
+                echo "ECR 에 이미 있음: ${dst##*:}"
+              else
+                grep -q ImageNotFoundException "$RUNNER_TEMP/ecr.err" \
+                  || echo "::warning::ECR 태그 확인 실패, Harbor 에서 다시 옮긴다: $(cat "$RUNNER_TEMP/ecr.err")"
                 # shortcut: 노드가 amd64 라고 가정하고 amd64 만 옮긴다(runner 맥북은 arm64). arm 노드가 생기면 crane/regctl 로 index 째 복사
                 docker pull --platform linux/amd64 "$img"
                 docker tag "$img" "$dst"
