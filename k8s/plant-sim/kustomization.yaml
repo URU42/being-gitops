@@ -12,4 +12,4 @@ resources:
 images:
 - name: harbor.uru42.space/uru42/plant-simulator
   newName: harbor.uru42.space/uru42/plant-simulator
-  newTag: test-16-3876ebde
+  newTag: test-17-3d750792
