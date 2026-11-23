@@ -1,0 +1,69 @@
+# main 에 매니페스트가 바뀌면(Jenkins 의 태그 커밋 포함) skala-us u4-2 에 배포한다.
+# Jenkins 는 그대로 Harbor 에 push 하고, 여기서 Harbor 이미지를 ECR(teams/u4-2/app:<이름>-<태그>)로 옮겨 apply 한다.
+# 필요: 캠퍼스 네트워크의 self-hosted runner(aws, kubectl, docker), repo Secrets HARBOR_USER / HARBOR_PASS (Harbor pull 전용 robot).
+# PVC·Secret 은 포털에서 만들므로 apply 하지 않는다. 삭제 권한이 없으므로 prune 하지 않는다.
+name: deploy
+on:
+  push:
+    branches: [main]
+    paths: ['k8s/overlays/**', 'k8s/plant-sim/**', '.github/workflows/deploy.yml']
+  workflow_dispatch:
+permissions:
+  id-token: write
+  contents: read
+concurrency:
+  group: deploy-u4-2
+  cancel-in-progress: false
+jobs:
+  deploy:
+    runs-on: self-hosted
+    steps:
+      - uses: actions/checkout@v4
+      # 로그인 정보를 runner PC 에 남기지 않는다 (RUNNER_TEMP 는 job 마다 비워진다)
+      - run: echo "DOCKER_CONFIG=$RUNNER_TEMP/docker" >> "$GITHUB_ENV"
+      - uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: arn:aws:iam::430986759212:role/gha-u4-2
+          aws-region: ap-northeast-2
+      - uses: aws-actions/amazon-ecr-login@v2
+        id: ecr
+      - name: Harbor login
+        env:
+          HARBOR_USER: ${{ secrets.HARBOR_USER }}
+          HARBOR_PASS: ${{ secrets.HARBOR_PASS }}
+        run: printf '%s' "$HARBOR_PASS" | docker login harbor.uru42.space -u "$HARBOR_USER" --password-stdin
+      - name: Harbor → ECR, apply
+        env:
+          ECR: ${{ steps.ecr.outputs.registry }}/teams/u4-2/app
+        run: |
+          set -euo pipefail
+          aws eks update-kubeconfig --name skala-us --region ap-northeast-2
+          for dir in k8s/overlays k8s/plant-sim; do
+            echo "::group::$dir"
+            out="$RUNNER_TEMP/$(basename "$dir").yaml"
+            kubectl kustomize "$dir" > "$out"
+            subst=()
+            for img in $(grep -oE 'harbor\.uru42\.space/[^[:space:]"]+' "$out" | sort -u); do
+              dst="$ECR:$(basename "${img%:*}")-${img##*:}"   # .../uru42/clx-ai:dev-41-x → app:clx-ai-dev-41-x
+              # ECR 태그는 덮어쓸 수 없다(IMMUTABLE). 이미 있으면 옮기지 않는다
+              if ! docker manifest inspect "$dst" >/dev/null 2>&1; then
+                docker pull "$img"
+                docker tag "$img" "$dst"
+                docker push "$dst"
+                docker image rm "$img" "$dst" >/dev/null
+              fi
+              echo "$img -> $dst"
+              subst+=(-e "s|$img|$dst|g")
+            done
+            if [ ${#subst[@]} -gt 0 ]; then sed "${subst[@]}" "$out" > "$out.ecr"; else cp "$out" "$out.ecr"; fi
+            if grep -q 'harbor\.uru42\.space' "$out.ecr"; then echo "harbor 이미지가 남았다" >&2; exit 1; fi
+            # PVC 는 만들 권한이 없다 (포털 신청). 문서 단위로 걸러낸다
+            awk 'BEGIN{RS="\n---\n"; ORS="\n---\n"} !/(^|\n)kind: PersistentVolumeClaim\n/' "$out.ecr" \
+              | kubectl apply -f - -o name | tee "$out.applied"
+            grep '^deployment' "$out.applied" | while read -r d; do
+              kubectl -n u4-2 rollout status "$d" --timeout=10m
+            done
+            echo "::endgroup::"
+          done
+      - if: always()
+        run: docker logout harbor.uru42.space || true
