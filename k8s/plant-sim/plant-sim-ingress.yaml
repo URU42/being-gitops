@@ -10,7 +10,7 @@ metadata:
     nginx.ingress.kubernetes.io/proxy-read-timeout: "3600"
     nginx.ingress.kubernetes.io/proxy-send-timeout: "3600"
 spec:
-  ingressClassName: public-nginx
+  ingressClassName: nginx # 안내문은 public-nginx 지만 클러스터 정책(finalproj-team-no-bypass)은 nginx 만 허용한다
   rules:
     - host: u4-2.skala-us.com
       http:

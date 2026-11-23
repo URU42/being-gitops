@@ -8,7 +8,7 @@ metadata:
     nginx.ingress.kubernetes.io/whitelist-source-range: "110.10.153.80/28,175.114.173.160/28" # skala-us 정책: 값 그대로 넣어야 배포가 허용된다
     nginx.ingress.kubernetes.io/proxy-body-size: 5m # Frontend Nginx 의 client_max_body_size 와 맞춘다
 spec:
-  ingressClassName: public-nginx
+  ingressClassName: nginx # 안내문은 public-nginx 지만 클러스터 정책(finalproj-team-no-bypass)은 nginx 만 허용한다
   tls:
     - hosts:
         - u4-2.skala-us.com
