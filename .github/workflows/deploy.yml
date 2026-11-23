@@ -19,8 +19,12 @@ jobs:
     runs-on: self-hosted
     steps:
       - uses: actions/checkout@v4
-      # 로그인 정보를 runner PC 에 남기지 않는다 (RUNNER_TEMP 는 job 마다 비워진다)
-      - run: echo "DOCKER_CONFIG=$RUNNER_TEMP/docker" >> "$GITHUB_ENV"
+      # 로그인 정보를 runner PC 에 남기지 않는다 (RUNNER_TEMP 는 job 마다 비워진다).
+      # auths 가 비어 있으면 docker 가 macOS 키체인을 고르는데, launchd 서비스 runner 는 키체인을 못 쓴다 → 더미 항목으로 파일 저장을 강제
+      - run: |
+          mkdir -p "$RUNNER_TEMP/docker"
+          echo '{"auths":{"placeholder.invalid":{}}}' > "$RUNNER_TEMP/docker/config.json"
+          echo "DOCKER_CONFIG=$RUNNER_TEMP/docker" >> "$GITHUB_ENV"
       - uses: aws-actions/configure-aws-credentials@v4
         with:
           role-to-assume: arn:aws:iam::430986759212:role/gha-u4-2
