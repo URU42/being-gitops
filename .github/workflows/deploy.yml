@@ -25,6 +25,7 @@ jobs:
           mkdir -p "$RUNNER_TEMP/docker"
           echo '{"auths":{"placeholder.invalid":{}}}' > "$RUNNER_TEMP/docker/config.json"
           echo "DOCKER_CONFIG=$RUNNER_TEMP/docker" >> "$GITHUB_ENV"
+          echo "KUBECONFIG=$RUNNER_TEMP/kubeconfig" >> "$GITHUB_ENV"   # runner 계정의 ~/.kube/config 를 건드리지 않는다
       - uses: aws-actions/configure-aws-credentials@v4
         with:
           role-to-assume: arn:aws:iam::430986759212:role/gha-u4-2
@@ -51,9 +52,10 @@ jobs:
               dst="$ECR:$(basename "${img%:*}")-${img##*:}"   # .../uru42/clx-ai:dev-41-x → app:clx-ai-dev-41-x
               # ECR 태그는 덮어쓸 수 없다(IMMUTABLE). 이미 있으면 옮기지 않는다
               if ! docker manifest inspect "$dst" >/dev/null 2>&1; then
-                docker pull "$img"
+                # shortcut: 노드가 amd64 라고 가정하고 amd64 만 옮긴다(runner 맥북은 arm64). arm 노드가 생기면 crane/regctl 로 index 째 복사
+                docker pull --platform linux/amd64 "$img"
                 docker tag "$img" "$dst"
-                docker push "$dst"
+                docker push --platform linux/amd64 "$dst"
                 docker image rm "$img" "$dst" >/dev/null
               fi
               echo "$img -> $dst"
