@@ -1,0 +1,163 @@
+# sk-clx-diag-agent AE 알람 탐지 워커 (python -m app.ae_runtime). 공장마다 하나씩 띄워 장애를 공장별로 나눈다.
+# 입력 plant-sim:data:{공장} → 출력 ae:{alarm-snapshot}:v1 (backend AE_SNAPSHOT_ENABLED 기본 true 가 읽는다).
+# --tag-config 생략 = 이미지 안 시뮬레이터 마스터(plant-simulator 1430d8f). --models-dir 없음 = PCA 없이 Setpoint·Nelson 만.
+# 상태는 메모리에만 있어 재시작하면 처음부터 다시 쌓는다. HTTP 포트가 없어 probe 는 두지 않는다 (Redis 오류면 프로세스가 끝나고 재시작된다).
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+    name: clx-ae-rfcc
+    labels: { app: clx-ae, plant: rfcc }
+spec:
+    replicas: 1 # 같은 입력을 두 워커가 읽으면 알람이 두 번 난다
+    revisionHistoryLimit: 2
+    strategy: { type: Recreate }
+    selector:
+        matchLabels: { app: clx-ae, plant: rfcc }
+    template:
+        metadata:
+            labels: { app: clx-ae, plant: rfcc }
+        spec:
+            automountServiceAccountToken: false
+            securityContext:
+                runAsNonRoot: true
+                runAsUser: 1000 # 이미지의 appuser
+                runAsGroup: 1000
+            containers:
+                - name: ae
+                  image: harbor.uru42.space/uru42/clx-ai:latest # 태그는 kustomization.yaml 의 clx-ai 를 따른다
+                  command: [python, -m, app.ae_runtime, --redis-url, "redis://clx-redis:6379", --raw-stream, "plant-sim:data:rfcc"]
+                  resources: # u4-2 team-quota 를 나눠 쓴다. 다섯 개 합계 limits cpu 500m, memory 1280Mi
+                      requests: { cpu: 20m, memory: 96Mi }
+                      limits: { cpu: 100m, memory: 256Mi }
+                  securityContext:
+                      allowPrivilegeEscalation: false
+                      readOnlyRootFilesystem: true
+                      capabilities: { drop: [ALL] }
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+    name: clx-ae-cdu
+    labels: { app: clx-ae, plant: cdu }
+spec:
+    replicas: 1 # 같은 입력을 두 워커가 읽으면 알람이 두 번 난다
+    revisionHistoryLimit: 2
+    strategy: { type: Recreate }
+    selector:
+        matchLabels: { app: clx-ae, plant: cdu }
+    template:
+        metadata:
+            labels: { app: clx-ae, plant: cdu }
+        spec:
+            automountServiceAccountToken: false
+            securityContext:
+                runAsNonRoot: true
+                runAsUser: 1000 # 이미지의 appuser
+                runAsGroup: 1000
+            containers:
+                - name: ae
+                  image: harbor.uru42.space/uru42/clx-ai:latest # 태그는 kustomization.yaml 의 clx-ai 를 따른다
+                  command: [python, -m, app.ae_runtime, --redis-url, "redis://clx-redis:6379", --raw-stream, "plant-sim:data:cdu"]
+                  resources: # u4-2 team-quota 를 나눠 쓴다. 다섯 개 합계 limits cpu 500m, memory 1280Mi
+                      requests: { cpu: 20m, memory: 96Mi }
+                      limits: { cpu: 100m, memory: 256Mi }
+                  securityContext:
+                      allowPrivilegeEscalation: false
+                      readOnlyRootFilesystem: true
+                      capabilities: { drop: [ALL] }
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+    name: clx-ae-hou
+    labels: { app: clx-ae, plant: hou }
+spec:
+    replicas: 1 # 같은 입력을 두 워커가 읽으면 알람이 두 번 난다
+    revisionHistoryLimit: 2
+    strategy: { type: Recreate }
+    selector:
+        matchLabels: { app: clx-ae, plant: hou }
+    template:
+        metadata:
+            labels: { app: clx-ae, plant: hou }
+        spec:
+            automountServiceAccountToken: false
+            securityContext:
+                runAsNonRoot: true
+                runAsUser: 1000 # 이미지의 appuser
+                runAsGroup: 1000
+            containers:
+                - name: ae
+                  image: harbor.uru42.space/uru42/clx-ai:latest # 태그는 kustomization.yaml 의 clx-ai 를 따른다
+                  command: [python, -m, app.ae_runtime, --redis-url, "redis://clx-redis:6379", --raw-stream, "plant-sim:data:hou"]
+                  resources: # u4-2 team-quota 를 나눠 쓴다. 다섯 개 합계 limits cpu 500m, memory 1280Mi
+                      requests: { cpu: 20m, memory: 96Mi }
+                      limits: { cpu: 100m, memory: 256Mi }
+                  securityContext:
+                      allowPrivilegeEscalation: false
+                      readOnlyRootFilesystem: true
+                      capabilities: { drop: [ALL] }
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+    name: clx-ae-rhds
+    labels: { app: clx-ae, plant: rhds }
+spec:
+    replicas: 1 # 같은 입력을 두 워커가 읽으면 알람이 두 번 난다
+    revisionHistoryLimit: 2
+    strategy: { type: Recreate }
+    selector:
+        matchLabels: { app: clx-ae, plant: rhds }
+    template:
+        metadata:
+            labels: { app: clx-ae, plant: rhds }
+        spec:
+            automountServiceAccountToken: false
+            securityContext:
+                runAsNonRoot: true
+                runAsUser: 1000 # 이미지의 appuser
+                runAsGroup: 1000
+            containers:
+                - name: ae
+                  image: harbor.uru42.space/uru42/clx-ai:latest # 태그는 kustomization.yaml 의 clx-ai 를 따른다
+                  command: [python, -m, app.ae_runtime, --redis-url, "redis://clx-redis:6379", --raw-stream, "plant-sim:data:rhds"]
+                  resources: # u4-2 team-quota 를 나눠 쓴다. 다섯 개 합계 limits cpu 500m, memory 1280Mi
+                      requests: { cpu: 20m, memory: 96Mi }
+                      limits: { cpu: 100m, memory: 256Mi }
+                  securityContext:
+                      allowPrivilegeEscalation: false
+                      readOnlyRootFilesystem: true
+                      capabilities: { drop: [ALL] }
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+    name: clx-ae-vrds
+    labels: { app: clx-ae, plant: vrds }
+spec:
+    replicas: 1 # 같은 입력을 두 워커가 읽으면 알람이 두 번 난다
+    revisionHistoryLimit: 2
+    strategy: { type: Recreate }
+    selector:
+        matchLabels: { app: clx-ae, plant: vrds }
+    template:
+        metadata:
+            labels: { app: clx-ae, plant: vrds }
+        spec:
+            automountServiceAccountToken: false
+            securityContext:
+                runAsNonRoot: true
+                runAsUser: 1000 # 이미지의 appuser
+                runAsGroup: 1000
+            containers:
+                - name: ae
+                  image: harbor.uru42.space/uru42/clx-ai:latest # 태그는 kustomization.yaml 의 clx-ai 를 따른다
+                  command: [python, -m, app.ae_runtime, --redis-url, "redis://clx-redis:6379", --raw-stream, "plant-sim:data:vrds"]
+                  resources: # u4-2 team-quota 를 나눠 쓴다. 다섯 개 합계 limits cpu 500m, memory 1280Mi
+                      requests: { cpu: 20m, memory: 96Mi }
+                      limits: { cpu: 100m, memory: 256Mi }
+                  securityContext:
+                      allowPrivilegeEscalation: false
+                      readOnlyRootFilesystem: true
+                      capabilities: { drop: [ALL] }
