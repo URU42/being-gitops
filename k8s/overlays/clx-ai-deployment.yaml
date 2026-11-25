@@ -37,6 +37,7 @@ spec:
                         valueFrom:
                             secretKeyRef: { name: clx-ai, key: ai-service-token, optional: true }
                       - { name: BACKEND_BASE_URL, value: "http://clx-backend:8080" } # 에이전트 Tool 이 읽는 backend
+                      - { name: RAG_SOURCE, value: backend } # 관리자 지식 자료를 Backend 내부 API에서 읽는다
                       - { name: AGENT_RESULT_DIRECTORY, value: /tmp/agent-results } # 루트 FS 가 읽기 전용이라 emptyDir 에 둔다. 파드 재시작 시 사라진다
                       - { name: ALARM_SUMMARY_MODEL, value: gpt-4o-mini }
                   resources: # u4-2 team-quota(limits cpu 2, memory 4Gi)를 다른 서비스와 나눠 쓴다. 실측 idle 2m / 33Mi
