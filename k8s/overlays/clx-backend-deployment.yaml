@@ -78,7 +78,7 @@ spec:
                         }
                       - { name: H2_CONSOLE_ENABLED, value: "false" }
                       - { name: MONITORING_ENABLED, value: "true" }
-                      - { name: SENSOR_DATA_IMPORT_ENABLED, value: "false" }
+                      - { name: SENSOR_DATA_IMPORT_ENABLED, value: "true" }
                       - { name: AI_MODE, value: http }
                       - { name: AI_BASE_URL, value: "http://clx-ai:8000" }
                       # clx-ai 와 같은 Secret 키를 읽어 X-Agent-Token 으로 보낸다. 없으면 AI 대화만 503 AGENT_NOT_CONFIGURED
