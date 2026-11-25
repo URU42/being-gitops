@@ -93,6 +93,7 @@ spec:
                       - { name: JAVA_TOOL_OPTIONS, value: "-Xms128m -Xmx1024m" } # compose 와 같은 힙. limits.memory 는 힙보다 여유 있게
                       # Alarm Worker: Redis Stream plant-sim:alarms → PostgreSQL(alarm 스키마). consumer 이름은 HOSTNAME(파드 이름)을 자동으로 쓴다
                       - { name: ALARM_WORKER_ENABLED, value: "true" }
+                      - { name: AE_SNAPSHOT_ENABLED, value: "true" }
                       - { name: REDIS_HOST, value: clx-redis } # plant-sim 과 같은 Redis
                       - { name: REDIS_PORT, value: "6379" }
                       # 제공된 rds-credentials Secret 에서 필요한 키만 골라 ALARM_DB_* 로 넣는다.
