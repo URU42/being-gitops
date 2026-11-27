@@ -78,6 +78,7 @@ spec:
                         }
                       - { name: H2_CONSOLE_ENABLED, value: "false" }
                       - { name: MONITORING_ENABLED, value: "true" }
+                      - { name: CURRENT_VALUES_ENABLED, value: "true" }
                       - { name: SENSOR_DATA_IMPORT_ENABLED, value: "false" }
                       - { name: SENSOR_DATA_FEEDER_URL, value: "http://plant-sim:8000" }
                       - { name: AI_MODE, value: http }
