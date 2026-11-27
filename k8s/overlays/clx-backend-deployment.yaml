@@ -92,6 +92,12 @@ spec:
                                     key: agent-internal-token,
                                     optional: true,
                                 }
+                      # 시뮬레이션 계산 중계(/api/v1/simulation/**) → plant-calc (k8s/plant-sim). enabled 인데 주소·토큰이 비면 시작을 거절한다
+                      - { name: SIMULATION_ENABLED, value: "true" }
+                      - { name: SIM_CALC_URL, value: "http://plant-calc:8010" }
+                      - name: SIM_CALC_TOKEN # plant-calc 와 같은 키. optional 아님: 없으면 위 이유로 어차피 뜨지 않는다
+                        valueFrom:
+                            secretKeyRef: { name: plant-calc, key: calc-token }
                       - { name: JAVA_TOOL_OPTIONS, value: "-Xms128m -Xmx1024m" } # compose 와 같은 힙. limits.memory 는 힙보다 여유 있게
                       # Alarm Worker: Redis Stream plant-sim:alarms → PostgreSQL(alarm 스키마). consumer 이름은 HOSTNAME(파드 이름)을 자동으로 쓴다
                       - { name: ALARM_WORKER_ENABLED, value: "true" }

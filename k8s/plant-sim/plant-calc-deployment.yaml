@@ -1,0 +1,50 @@
+# plant-calc: 시뮬레이션 전용 정적 계산 서비스 (plant-simulator simulator/calc_api.py, PU-M1).
+# plant-sim 과 같은 이미지를 command 만 바꿔 쓴다 → 태그는 kustomization.yaml 의 images 하나로 함께 바뀐다 (Jenkins).
+# 무상태(파일·DB·스트림에 쓰지 않음)라 PVC 없음. clx-backend 만 클러스터 안에서 부르므로 Ingress 없음.
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+    name: plant-calc
+    labels: { app: plant-calc }
+spec:
+    replicas: 1
+    revisionHistoryLimit: 2 # 빌드마다 태그가 바뀌므로 작게 둔다
+    selector:
+        matchLabels: { app: plant-calc }
+    template:
+        metadata:
+            labels: { app: plant-calc }
+        spec:
+            automountServiceAccountToken: false
+            securityContext:
+                runAsNonRoot: true
+                runAsUser: 1000 # 이미지에 USER 가 없어 숫자로 지정한다. /app 은 읽기만 한다
+                runAsGroup: 1000
+            containers:
+                - name: plant-calc
+                  image: harbor.uru42.space/uru42/plant-simulator:latest # 태그는 kustomization.yaml 의 images 로 바꾼다
+                  args: [python, -m, simulator.calc_api, --host, 0.0.0.0, --port, "8010"]
+                  ports:
+                      - { name: http, containerPort: 8010 }
+                  env:
+                      # X-Calc-Token 비교값. clx-backend 의 SIM_CALC_TOKEN 과 같은 키를 읽는다.
+                      # optional 아님: 비어 있으면 calc_api 가 인증 없이 받으므로 Secret 이 없으면 뜨지 않게 한다
+                      - name: CALC_TOKEN
+                        valueFrom:
+                            secretKeyRef: { name: plant-calc, key: calc-token }
+                  resources: # u4-2 team-quota(limits cpu 4, memory 8Gi)를 나눠 쓴다. 프로세스당 약 60MB(calc_api.py), 계산은 CPU 작업
+                      requests: { cpu: 50m, memory: 128Mi }
+                      limits: { cpu: 500m, memory: 256Mi }
+                  securityContext: # compose.sim.yaml 의 read_only: true 와 같다
+                      allowPrivilegeEscalation: false
+                      readOnlyRootFilesystem: true
+                      capabilities: { drop: [ALL] }
+                  readinessProbe:
+                      httpGet: { path: /health, port: http }
+                      periodSeconds: 10
+                      timeoutSeconds: 3
+                  livenessProbe:
+                      httpGet: { path: /health, port: http }
+                      periodSeconds: 30
+                      timeoutSeconds: 3
+                      failureThreshold: 3

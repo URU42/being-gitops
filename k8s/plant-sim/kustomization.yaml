@@ -8,6 +8,8 @@ resources:
 - plant-sim-deployment.yaml
 - plant-sim-service.yaml
 - plant-sim-ingress.yaml
+- plant-calc-deployment.yaml # 같은 이미지(plant-simulator)라 아래 images 태그를 함께 쓴다
+- plant-calc-service.yaml
 
 images:
 - name: harbor.uru42.space/uru42/plant-simulator
