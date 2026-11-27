@@ -39,6 +39,12 @@ spec:
                       allowPrivilegeEscalation: false
                       readOnlyRootFilesystem: true
                       capabilities: { drop: [ALL] }
+                  # 기동 때 다섯 공장의 정상 운전점을 미리 계산한다(로컬 1코어 약 23초, cpu 500m 에서는 liveness 90초를 넘긴다). 최대 10분 기다린다
+                  startupProbe:
+                      httpGet: { path: /health, port: http }
+                      periodSeconds: 10
+                      timeoutSeconds: 3
+                      failureThreshold: 60
                   readinessProbe:
                       httpGet: { path: /health, port: http }
                       periodSeconds: 10
