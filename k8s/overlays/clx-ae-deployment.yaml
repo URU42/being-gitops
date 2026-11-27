@@ -1,6 +1,6 @@
 # sk-clx-diag-agent AE 알람 탐지 워커 (python -m app.ae_runtime). 공장마다 하나씩 띄워 장애를 공장별로 나눈다.
 # 입력 plant-sim:data:{공장} → 출력 ae:{alarm-snapshot}:v1 (backend AE_SNAPSHOT_ENABLED 기본 true 가 읽는다).
-# 모델·태그 설정은 clx-ai 이미지의 /app/models/pca-1430d8f (plant-simulator 1430d8f 보정, 설비 42대 PCA + Nelson 기준). 시뮬레이터 태그가 바뀌면 AI 팀이 재학습한다.
+# 모델·태그 설정은 clx-ai 이미지의 /app/models/pca-d13e-header (plant-simulator 1430d8f 보정, 설비 42대 PCA + Nelson 기준). 시뮬레이터 태그가 바뀌면 AI 팀이 재학습한다.
 # 상태는 메모리에만 있어 재시작하면 처음부터 다시 쌓는다. HTTP 포트가 없어 probe 는 두지 않는다 (Redis 오류면 프로세스가 끝나고 재시작된다).
 apiVersion: apps/v1
 kind: Deployment
@@ -25,7 +25,7 @@ spec:
             containers:
                 - name: ae
                   image: harbor.uru42.space/uru42/clx-ai:latest # 태그는 kustomization.yaml 의 clx-ai 를 따른다
-                  command: [python, -m, app.ae_runtime, --redis-url, "redis://clx-redis:6379", --raw-stream, "plant-sim:data:rfcc", --models-dir, /app/models/pca-1430d8f, --tag-config, /app/models/pca-1430d8f/tag-config.json]
+                  command: [python, -m, app.ae_runtime, --redis-url, "redis://clx-redis:6379", --raw-stream, "plant-sim:data:rfcc", --models-dir, /app/models/pca-d13e-header, --tag-config, /app/models/pca-d13e-header/tag-config.json]
                   resources: # u4-2 team-quota 를 나눠 쓴다. 다섯 개 합계 limits cpu 500m, memory 1280Mi
                       requests: { cpu: 20m, memory: 96Mi }
                       limits: { cpu: 100m, memory: 256Mi }
@@ -57,7 +57,7 @@ spec:
             containers:
                 - name: ae
                   image: harbor.uru42.space/uru42/clx-ai:latest # 태그는 kustomization.yaml 의 clx-ai 를 따른다
-                  command: [python, -m, app.ae_runtime, --redis-url, "redis://clx-redis:6379", --raw-stream, "plant-sim:data:cdu", --models-dir, /app/models/pca-1430d8f, --tag-config, /app/models/pca-1430d8f/tag-config.json]
+                  command: [python, -m, app.ae_runtime, --redis-url, "redis://clx-redis:6379", --raw-stream, "plant-sim:data:cdu", --models-dir, /app/models/pca-d13e-header, --tag-config, /app/models/pca-d13e-header/tag-config.json]
                   resources: # u4-2 team-quota 를 나눠 쓴다. 다섯 개 합계 limits cpu 500m, memory 1280Mi
                       requests: { cpu: 20m, memory: 96Mi }
                       limits: { cpu: 100m, memory: 256Mi }
@@ -89,7 +89,7 @@ spec:
             containers:
                 - name: ae
                   image: harbor.uru42.space/uru42/clx-ai:latest # 태그는 kustomization.yaml 의 clx-ai 를 따른다
-                  command: [python, -m, app.ae_runtime, --redis-url, "redis://clx-redis:6379", --raw-stream, "plant-sim:data:hou", --models-dir, /app/models/pca-1430d8f, --tag-config, /app/models/pca-1430d8f/tag-config.json]
+                  command: [python, -m, app.ae_runtime, --redis-url, "redis://clx-redis:6379", --raw-stream, "plant-sim:data:hou", --models-dir, /app/models/pca-d13e-header, --tag-config, /app/models/pca-d13e-header/tag-config.json]
                   resources: # u4-2 team-quota 를 나눠 쓴다. 다섯 개 합계 limits cpu 500m, memory 1280Mi
                       requests: { cpu: 20m, memory: 96Mi }
                       limits: { cpu: 100m, memory: 256Mi }
@@ -121,7 +121,7 @@ spec:
             containers:
                 - name: ae
                   image: harbor.uru42.space/uru42/clx-ai:latest # 태그는 kustomization.yaml 의 clx-ai 를 따른다
-                  command: [python, -m, app.ae_runtime, --redis-url, "redis://clx-redis:6379", --raw-stream, "plant-sim:data:rhds", --models-dir, /app/models/pca-1430d8f, --tag-config, /app/models/pca-1430d8f/tag-config.json]
+                  command: [python, -m, app.ae_runtime, --redis-url, "redis://clx-redis:6379", --raw-stream, "plant-sim:data:rhds", --models-dir, /app/models/pca-d13e-header, --tag-config, /app/models/pca-d13e-header/tag-config.json]
                   resources: # u4-2 team-quota 를 나눠 쓴다. 다섯 개 합계 limits cpu 500m, memory 1280Mi
                       requests: { cpu: 20m, memory: 96Mi }
                       limits: { cpu: 100m, memory: 256Mi }
@@ -153,7 +153,7 @@ spec:
             containers:
                 - name: ae
                   image: harbor.uru42.space/uru42/clx-ai:latest # 태그는 kustomization.yaml 의 clx-ai 를 따른다
-                  command: [python, -m, app.ae_runtime, --redis-url, "redis://clx-redis:6379", --raw-stream, "plant-sim:data:vrds", --models-dir, /app/models/pca-1430d8f, --tag-config, /app/models/pca-1430d8f/tag-config.json]
+                  command: [python, -m, app.ae_runtime, --redis-url, "redis://clx-redis:6379", --raw-stream, "plant-sim:data:vrds", --models-dir, /app/models/pca-d13e-header, --tag-config, /app/models/pca-d13e-header/tag-config.json]
                   resources: # u4-2 team-quota 를 나눠 쓴다. 다섯 개 합계 limits cpu 500m, memory 1280Mi
                       requests: { cpu: 20m, memory: 96Mi }
                       limits: { cpu: 100m, memory: 256Mi }
